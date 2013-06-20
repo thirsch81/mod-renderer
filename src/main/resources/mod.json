@@ -1,0 +1,15 @@
+{
+	"main":"groovy:de.thhi.vertx.renderer.RenderVerticle",
+ 	"worker": true,
+ 	"preserve-cwd": true,
+	
+	// Mandatory fields
+	"description":"Simple Renderer Module",
+	"licenses": ["Creative Commons Attribution 3.0 Unported License"],
+	"author": "Thomas Hirsch",
+	
+	// Optional fields
+	"developers": [],
+	"keywords": [],
+	"homepage": ""
+}

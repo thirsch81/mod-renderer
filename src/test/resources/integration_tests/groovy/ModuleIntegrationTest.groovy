@@ -27,7 +27,7 @@ def testSomethingElse() {
 // Make sure you initialize
 VertxTests.initialize(this)
 
-container.deployModule("thhi.vertx~iteramock~0.5.0", { result ->
+container.deployModule("thhi.vertx~renderer~0.5.0", { result ->
 	// Deployment is asynchronous and this handler will be called when it's complete (or failed)
 	assertTrue(result.cause(), result.succeeded)
 	assertNotNull("deploymentID should not be null", result.result())

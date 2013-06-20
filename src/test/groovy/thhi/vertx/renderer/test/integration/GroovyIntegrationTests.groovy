@@ -1,4 +1,4 @@
-package de.thhi.soapmock.test.integration;
+package thhi.vertx.renderer.test.integration;
 /*
  * Copyright 2013 Red Hat, Inc.
  *

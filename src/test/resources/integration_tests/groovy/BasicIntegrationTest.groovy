@@ -1,10 +1,8 @@
 import static org.vertx.testtools.VertxAssert.*
 
-import org.vertx.groovy.core.http.HttpClientResponse
 import org.vertx.groovy.testtools.VertxTests
 
-import de.thhi.vertx.renderer.RenderVerticle
-
+import thhi.vertx.renderer.RenderVerticle
 // The test methods must being with "test"
 
 def testDeployRenderVerticle() {

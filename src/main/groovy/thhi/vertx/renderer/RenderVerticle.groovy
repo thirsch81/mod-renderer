@@ -1,4 +1,4 @@
-package de.thhi.vertx.renderer
+package thhi.vertx.renderer
 
 import groovy.text.SimpleTemplateEngine
 

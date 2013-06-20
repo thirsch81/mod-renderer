@@ -1,5 +1,5 @@
 {
-	"main":"groovy:de.thhi.vertx.renderer.RenderVerticle",
+	"main":"groovy:thhi.vertx.renderer.RenderVerticle",
  	"worker": true,
  	"preserve-cwd": true,
 	

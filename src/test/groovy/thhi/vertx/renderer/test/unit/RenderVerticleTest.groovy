@@ -1,8 +1,8 @@
-package de.thhi.soapmock.test.unit;
+package thhi.vertx.renderer.test.unit;
 
 import static org.junit.Assert.*;
 
-import de.thhi.vertx.renderer.RenderVerticle
+import thhi.vertx.renderer.RenderVerticle
 import org.junit.Test;
 import org.vertx.groovy.core.Vertx
 

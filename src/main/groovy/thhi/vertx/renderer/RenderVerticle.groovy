@@ -2,8 +2,9 @@ package thhi.vertx.renderer
 
 import groovy.text.SimpleTemplateEngine
 
-import org.vertx.groovy.core.eventbus.EventBus
 import org.vertx.groovy.platform.Verticle
+
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 public class RenderVerticle extends Verticle {
 
@@ -11,7 +12,7 @@ public class RenderVerticle extends Verticle {
 		readTemplates()
 		vertx.eventBus.registerHandler("renderer.render", handleRender)
 		vertx.eventBus.registerHandler("renderer.templates", handleTemplates)
-		container.logger.info("RenderVerticle started")
+		logInfo("RenderVerticle started")
 	}
 
 	def templates = {
@@ -30,74 +31,107 @@ public class RenderVerticle extends Verticle {
 		["status": "ok", "${name}": response]
 	}
 
-	def handleTemplates = { message ->
+	def handleRender =  { message ->
 		def body = message.body
-		container.logger.info("RenderVerticle: received ${body}")
+		logDebug("Received ${body}")
 		try {
-			assert body.action
+			message.reply(render(body.name, body.binding))
 		} catch (Exception e) {
-			def errorMsg = "${e.message}: Expected message format: [action: <action>, (name: <name>, template: <template>)]"
-			container.logger.error(errorMsg)
+			def errorMsg = "Expected message format: [name: <name>, binding: <binding>]"
+			logError(errorMsg, e)
 			message.reply(error(errorMsg))
-		}
-		def templates = templates()
-		try {
-			if("fetch".equals(body.action)) {
-				def result = []
-				templates.each { k, v ->
-					result.add(["name": k, "template": v])
-				}
-				message.reply(templatesOk(result))
-				container.logger.info("RenderVerticle: sent templates to client")
-			}
-		} catch (Exception e) {
-			container.logger.error(e.message)
-			message.reply(error(e.message))
 		}
 	}
 
-	def handleRender =  { message ->
+	def handleTemplates = { message ->
 		def body = message.body
-		container.logger.info("RenderVerticle: received ${body}")
+		logDebug("Received ${body}")
 		try {
-			assert body.name
-			assert body.binding
+			body.action
 		} catch (Exception e) {
-			def errorMsg = "${e.message}: Expected message format: [name: <name>, binding: <binding>]"
-			container.logger.error(errorMsg)
+			def errorMsg = "Expected message format: [action: <action>, (name: <name>, template: <template>)]"
+			logError(errorMsg, e)
 			message.reply(error(errorMsg))
 		}
-
-		try {
-			def r_time = now()
-			message.reply(render(body.name, body.binding))
-			container.logger.info("RenderVerticle: rendered template ${body.name} in ${now() - r_time}ms")
-		} catch (Exception e) {
-			container.logger.error(e.message)
-			message.reply(error(e.message))
+		switch (body.action) {
+			case "fetch":
+				def result = []
+				templates().each { k, v ->
+					result.add(["name": k, "template": v])
+				}
+				message.reply(templatesOk(result))
+				logDebug("Sent ${result.size()} templates to client")
+				break
+			case "submit":
+			// TODO implement
+				throw new NotImplementedException()
+				break
+			default:
+				def errorMsg = "Unknown action: ${body.action}, expected: fetch|submit"
+				logError(errorMsg)
+				message.reply(error(errorMsg))
 		}
 	}
 
 	def render(name, binding) {
-		def templates = templates()
-		def template = templates[name]
-		def response = new SimpleTemplateEngine().createTemplate(template).make(binding).toString()
-		renderOk(name, response)
+		try {
+			def r_time = now()
+			def response = new SimpleTemplateEngine().createTemplate(templates()[name]).make(binding).toString()
+			logDebug("Rendered template ${name} for binding ${binding} in ${now() - r_time}ms")
+			renderOk(name, response)
+		} catch (Exception e) {
+			logError("Exception when rendering ${name} for binding ${binding}: ", e)
+			error(e.message)
+		}
 	}
 
 	def readTemplates() {
-		def t_time = now()
-		def templates = templates()
-		try {
-			new File("templates").eachFile {
-				container.logger.info("RenderVerticle: reading template ${it}")
-				templates[it.name - ".template"] = it.text
+		vertx.fileSystem.readDir("templates", ".*\\.template") { result ->
+			if (result.succeeded) {
+				readTemplateDirectory(result.result)
+			} else {
+				logError("No template directory found")
 			}
-		} catch (Exception e) {
-			container.logger.error("RenderVerticle: ${e.message}")
 		}
-		container.logger.info("RenderVerticle: read ${templates.size()} templates in ${now() - t_time}ms")
+	}
+
+	def readTemplateDirectory(files) {
+		if(files) {
+			logDebug("Reading templates...")
+			for (file in files) {
+				readTemplateFile(file)
+			}
+		} else {
+			logError("No templates to read")
+		}
+	}
+
+	def readTemplateFile(file) {
+		vertx.fileSystem.readFile(file) { result ->
+			if (result.succeeded) {
+				templates()[new File(file).name - ".template"] = result.result.toString()
+				logDebug("Read template ${file}")
+			} else {
+				logError("Error reading template ${file}", result.cause)
+			}
+		}
 	}
 
 	def now = { System.currentTimeMillis() }
+
+	def logInfo(msg, err = null) {
+		if(container.logger.infoEnabled) {
+			container.logger.info(msg, err)
+		}
+	}
+
+	def logError(msg, err = null) {
+		container.logger.error(msg, err)
+	}
+
+	def logDebug(msg, err = null) {
+		if(container.logger.debugEnabled) {
+			container.logger.debug(msg, err)
+		}
+	}
 }

@@ -14,20 +14,25 @@ import org.vertx.groovy.testtools.VertxTests;
 
 // The test methods must being with "test"
 
-def testSomething() {
-	container.logger.info("testSomething()")
-	container.logger.info("vertx is ${vertx.getClass().getName()}")
-	testComplete()
-}
+def testModuleRender() {
+	vertx.eventBus.send("renderer.render", ["name" : "test-response", "binding" : ["content" : "some content"]]) { reply ->
+		assertNotNull(reply)
+		container.logger.info(reply.body)
+		reply.body.with {
+			assertEquals("ok", it.status)
+			assertNotNull(it."test-response")
+			assertTrue(it."test-response".contains('<?xml version="1.0" encoding="UTF-8" ?>'))
+			assertTrue(it."test-response".contains("some content"))
+		}
+		testComplete()
+	}
 
-def testSomethingElse() {
-	testComplete()
 }
 
 // Make sure you initialize
 VertxTests.initialize(this)
 
-container.deployModule("thhi.vertx~renderer~0.5.0", { result ->
+container.deployModule("thhi.vertx~renderer~0.6.0", { result ->
 	// Deployment is asynchronous and this handler will be called when it's complete (or failed)
 	assertTrue(result.cause(), result.succeeded)
 	assertNotNull("deploymentID should not be null", result.result())

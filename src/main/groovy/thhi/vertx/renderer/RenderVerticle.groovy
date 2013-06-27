@@ -130,6 +130,8 @@ public class RenderVerticle extends Verticle {
 	}
 
 	def logDebug(msg, err = null) {
-		container.logger.debug(msg, err)
+		if(container.logger.debugEnabled) {
+			container.logger.debug(msg, err)
+		}
 	}
 }

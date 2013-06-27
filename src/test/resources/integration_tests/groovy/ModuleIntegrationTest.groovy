@@ -34,7 +34,7 @@ VertxTests.initialize(this)
 
 container.deployModule("thhi.vertx~renderer~0.6.0", { result ->
 	// Deployment is asynchronous and this handler will be called when it's complete (or failed)
-	assertTrue(result.cause(), result.succeeded)
+	assertTrue("${result.cause()}", result.succeeded)
 	assertNotNull("deploymentID should not be null", result.result())
 	// If deployed correctly then start the tests!
 	VertxTests.startTests(this)

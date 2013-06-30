@@ -4,8 +4,6 @@ import groovy.text.SimpleTemplateEngine
 
 import org.vertx.groovy.platform.Verticle
 
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
-
 public class RenderVerticle extends Verticle {
 
 	def start() {
@@ -23,63 +21,102 @@ public class RenderVerticle extends Verticle {
 		["status": "error", "message": message]
 	}
 
-	def templatesOk(templates) {
+	def fetchAllOk(templates) {
 		["status": "ok", "templates": templates]
+	}
+
+	def fetchOk(template) {
+		["status": "ok", "template": template]
 	}
 
 	def renderOk(name, response) {
 		["status": "ok", "${name}": response]
 	}
 
+	def submitOk() {
+		["status": "ok"]
+	}
+
 	def handleRender =  { message ->
+
 		def body = message.body
 		logDebug("Received ${body}")
-		try {
-			message.reply(render(body.name, body.binding))
-		} catch (Exception e) {
-			def errorMsg = "Expected message format: [name: <name>, binding: <binding>]"
-			logError(errorMsg, e)
+
+		if(!("name" in body && "binding" in body)) {
+
+			def errorMsg = "Expected message format [name: <name>, binding: <binding>], not ${body.toString()}"
+			logError(errorMsg)
 			message.reply(error(errorMsg))
+		} else {
+
+			message.reply(render(body.name, body.binding))
 		}
 	}
 
 	def handleTemplates = { message ->
+
 		def body = message.body
 		logDebug("Received ${body}")
-		try {
-			body.action
-		} catch (Exception e) {
-			def errorMsg = "Expected message format: [action: <action>, (name: <name>, template: <template>)]"
-			logError(errorMsg, e)
+
+		if(!("action" in body)) {
+
+			def errorMsg = "Expected message format [action: <action>, (name: <name>), (template: <template>)], not ${body.toString()}"
+			logError(errorMsg)
 			message.reply(error(errorMsg))
-		}
-		switch (body.action) {
-			case "fetch":
-				def result = []
-				templates().each { k, v ->
-					result.add(["name": k, "template": v])
-				}
-				message.reply(templatesOk(result))
-				logDebug("Sent ${result.size()} templates to client")
-				break
-			case "submit":
-			// TODO implement
-				throw new NotImplementedException()
-				break
-			default:
-				def errorMsg = "Unknown action: ${body.action}, expected: fetch|submit"
-				logError(errorMsg)
-				message.reply(error(errorMsg))
+		} else {
+
+			switch (body.action) {
+
+				case "fetch":
+
+					if("name" in body) {
+
+						def result = templates()[body.name]
+						message.reply(fetchOk(result))
+						logDebug("Sent template ${body.name} to client")
+					} else {
+
+						def result = [];
+						templates().each { k, v ->
+							result.add(["name": k, "template": v])
+						}
+						message.reply(fetchAllOk(result))
+						logDebug("Sent ${result.size()} templates to client")
+					}
+					break
+
+				case "submit":
+
+					if(!("name" in body && "template" in body)) {
+
+						def errorMsg = "Expected message format [action: 'submit', name: <name>, template: <template>], not ${body.toString()}"
+						logError(errorMsg)
+						message.reply(error(errorMsg))
+					} else {
+						templates()[body.name] = body.template
+						logDebug("Accepted template ${body.name} from client")
+						message.reply(submitOk())
+					}
+					break
+
+				default:
+					def errorMsg = "Unknown action: expected: fetch|submit, not ${body.action}"
+					logError(errorMsg)
+					message.reply(error(errorMsg))
+			}
 		}
 	}
 
 	def render(name, binding) {
+
 		try {
+
 			def r_time = now()
 			def response = new SimpleTemplateEngine().createTemplate(templates()[name]).make(binding).toString()
 			logDebug("Rendered template ${name} for binding ${binding} in ${now() - r_time}ms")
 			renderOk(name, response)
 		} catch (Exception e) {
+
 			logError("Exception when rendering ${name} for binding ${binding}: ", e)
 			error(e.message)
 		}

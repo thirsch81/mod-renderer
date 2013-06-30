@@ -44,7 +44,7 @@ public class RenderVerticle extends Verticle {
 
 		if(!("name" in body && "binding" in body)) {
 
-			def errorMsg = "Expected message format [name: <name>, binding: <binding>], not ${body.toString()}"
+			def errorMsg = "Expected message format [name: <name>, binding: <binding>], not " + body
 			logError(errorMsg)
 			message.reply(error(errorMsg))
 		} else {
@@ -60,7 +60,7 @@ public class RenderVerticle extends Verticle {
 
 		if(!("action" in body)) {
 
-			def errorMsg = "Expected message format [action: <action>, (name: <name>), (template: <template>)], not ${body.toString()}"
+			def errorMsg = "Expected message format [action: <action>, (name: <name>), (template: <template>)], not " + body
 			logError(errorMsg)
 			message.reply(error(errorMsg))
 		} else {
@@ -73,7 +73,7 @@ public class RenderVerticle extends Verticle {
 
 						def result = templates()[body.name]
 						message.reply(fetchOk(result))
-						logDebug("Sent template ${body.name} to client")
+						logDebug("Sent template " + body.name+ " to client")
 					} else {
 
 						def result = [];
@@ -87,20 +87,28 @@ public class RenderVerticle extends Verticle {
 
 				case "submit":
 
-					if(!("name" in body && "template" in body)) {
+					if(!(body.containsKey("name") && body.containsKey("template"))) {
 
-						def errorMsg = "Expected message format [action: 'submit', name: <name>, template: <template>], not ${body.toString()}"
+						def errorMsg = "Expected message format [action: 'submit', name: <name>, template: <template>], not " + body
 						logError(errorMsg)
 						message.reply(error(errorMsg))
 					} else {
-						templates()[body.name] = body.template
-						logDebug("Accepted template ${body.name} from client")
+
+						if(!(body.name ==~ /^\w{3,16}$/)) {
+
+							def errorMsg = "Expected proper template name, not " + body.name
+							logError(errorMsg)
+							message.reply(error(errorMsg))
+						} else
+
+							templates()[body.name] = body.template
+						logDebug("Accepted template " + body.name + " from client")
 						message.reply(submitOk())
 					}
 					break
 
 				default:
-					def errorMsg = "Unknown action: expected: fetch|submit, not ${body.action}"
+					def errorMsg = "Unknown action: expected: fetch|submit, not " + body.action
 					logError(errorMsg)
 					message.reply(error(errorMsg))
 			}

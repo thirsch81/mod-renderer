@@ -32,12 +32,25 @@ def testRenderVerticleRender() {
 def testRenderVerticleSubmitTemplate() {
 	container.deployWorkerVerticle("groovy:" + RenderVerticle.class.name) { result ->
 		assertTrue("${result.cause()}", result.succeeded)
-		vertx.eventBus.send("renderer.templates", ["action" : "submit", "name" : "test-submit", "template" : "test-submit-template"]) { reply ->
+		vertx.eventBus.send("renderer.templates", ["action" : "submit", "name" : "test_submit", "template" : "test-submit-template"]) { reply ->
 			assertNotNull(reply)
 			container.logger.info(reply.body)
 			assertEquals("ok", reply.body.status)
-			assertNotNull(vertx.sharedData.getMap("rendererTemplates")["test-submit"])
-			assertEquals("test-submit-template", vertx.sharedData.getMap("rendererTemplates")["test-submit"])
+			assertNotNull(vertx.sharedData.getMap("rendererTemplates")["test_submit"])
+			assertEquals("test-submit-template", vertx.sharedData.getMap("rendererTemplates")["test_submit"])
+			testComplete()
+		}
+	}
+}
+
+def testRenderVerticleUnknownAction() {
+	container.deployWorkerVerticle("groovy:" + RenderVerticle.class.name) { result ->
+		assertTrue("${result.cause()}", result.succeeded)
+		vertx.eventBus.send("renderer.templates", ["action" : "unknown"]) { reply ->
+			assertNotNull(reply)
+			container.logger.info(reply.body)
+			assertEquals("error", reply.body.status)
+			assertEquals("Unknown action: expected: fetch|submit, not unknown", reply.body.message)
 			testComplete()
 		}
 	}

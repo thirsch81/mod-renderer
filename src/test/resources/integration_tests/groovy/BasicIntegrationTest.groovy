@@ -56,6 +56,19 @@ def testRenderVerticleUnknownAction() {
 	}
 }
 
+def testRenderVerticleNoAction() {
+	container.deployWorkerVerticle("groovy:" + RenderVerticle.class.name) { result ->
+		assertTrue("${result.cause()}", result.succeeded)
+		vertx.eventBus.send("renderer.templates", ["no-action" : "here"]) { reply ->
+			assertNotNull(reply)
+			container.logger.info(reply.body)
+			assertEquals("error", reply.body.status)
+			assertEquals("Expected message format [action: <action>, (name: <name>), (template: <template>)], not [no-action:here]", reply.body.message)
+			testComplete()
+		}
+	}
+}
+
 def testRenderVerticleFetchTemplate() {
 	container.deployWorkerVerticle("groovy:" + RenderVerticle.class.name) { result ->
 		assertTrue("${result.cause()}", result.succeeded)

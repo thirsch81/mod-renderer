@@ -43,14 +43,11 @@ public class RenderVerticle extends Verticle {
 		logDebug("Received ${body}")
 
 		if(!("name" in body && "binding" in body)) {
-
-			def errorMsg = "Expected message format [name: <name>, binding: <binding>], not " + body
-			logError(errorMsg)
-			message.reply(error(errorMsg))
-		} else {
-
-			message.reply(render(body.name, body.binding))
+			replyErrorTo(message, "Expected message format [name: <name>, binding: <binding>], not " + body)
+			return
 		}
+
+		message.reply(render(body.name, body.binding))
 	}
 
 	def handleTemplates = { message ->
@@ -59,59 +56,46 @@ public class RenderVerticle extends Verticle {
 		logDebug("Received ${body}")
 
 		if(!("action" in body)) {
+			replyErrorTo(message, "Expected message format [action: <action>, (name: <name>), (template: <template>)], not " + body)
+			return
+		}
 
-			def errorMsg = "Expected message format [action: <action>, (name: <name>), (template: <template>)], not " + body
-			logError(errorMsg)
-			message.reply(error(errorMsg))
-		} else {
+		switch (body.action) {
 
-			switch (body.action) {
+			case "fetch":
 
-				case "fetch":
-
-					if("name" in body) {
-
-						def result = templates()[body.name]
-						message.reply(fetchOk(result))
-						logDebug("Sent template " + body.name+ " to client")
-					} else {
-
-						def result = [];
-						templates().each { k, v ->
-							result.add(["name": k, "template": v])
-						}
-						message.reply(fetchAllOk(result))
-						logDebug("Sent ${result.size()} templates to client")
-					}
+				if("name" in body) {
+					def result = templates()[body.name]
+					message.reply(fetchOk(result))
+					logDebug("Sent template " + body.name + " to client")
 					break
+				}
+				def result = [];
+				templates().each { k, v ->
+					result.add(["name": k, "template": v])
+				}
+				message.reply(fetchAllOk(result))
+				logDebug("Sent ${result.size()} templates to client")
+				break
 
-				case "submit":
+			case "submit":
 
-					if(!(body.containsKey("name") && body.containsKey("template"))) {
-
-						def errorMsg = "Expected message format [action: 'submit', name: <name>, template: <template>], not " + body
-						logError(errorMsg)
-						message.reply(error(errorMsg))
-					} else {
-
-						if(!(body.name ==~ /^\w{3,16}$/)) {
-
-							def errorMsg = "Expected proper template name, not " + body.name
-							logError(errorMsg)
-							message.reply(error(errorMsg))
-						} else
-
-							templates()[body.name] = body.template
-						logDebug("Accepted template " + body.name + " from client")
-						message.reply(submitOk())
-					}
+				if(!(body.containsKey("name") && body.containsKey("template"))) {
+					replyErrorTo(message, "Expected message format [action: 'submit', name: <name>, template: <template>], not " + body)
 					break
+				}
 
-				default:
-					def errorMsg = "Unknown action: expected: fetch|submit, not " + body.action
-					logError(errorMsg)
-					message.reply(error(errorMsg))
-			}
+				if(!(body.name ==~ /^[a-zA-Z0-9_-]{3,25}$/)) {
+					replyErrorTo(message, "Expected proper template name, not " + body.name)
+					break
+				}
+				templates()[body.name] = body.template
+				logDebug("Accepted template " + body.name + " from client")
+				message.reply(submitOk())
+				break
+
+			default:
+				replyErrorTo(message, "Unknown action: expected: fetch|submit, not " + body.action)
 		}
 	}
 
@@ -162,7 +146,10 @@ public class RenderVerticle extends Verticle {
 		}
 	}
 
-	def now = { System.currentTimeMillis() }
+	def replyErrorTo(message, text) {
+		logError(text)
+		message.reply(error(text))
+	}
 
 	def logInfo(msg, err = null) {
 		if(container.logger.infoEnabled) {
@@ -179,4 +166,6 @@ public class RenderVerticle extends Verticle {
 			container.logger.debug(msg, err)
 		}
 	}
+
+	def now = { System.currentTimeMillis() }
 }

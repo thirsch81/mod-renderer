@@ -94,7 +94,7 @@ def testRenderVerticleFetchAllTemplates() {
 			reply.body.with {
 				assertEquals("ok", it.status)
 				assertNotNull(it.templates)
-				assertTrue(["name": "test-response"] in it.templates)
+				assertTrue("test-response" in it.templates)
 			}
 			testComplete()
 		}

@@ -72,7 +72,7 @@ public class RenderVerticle extends Verticle {
 				}
 				def result = [];
 				templates().each { k, v ->
-					result.add(["name": k])
+					result.add(k)
 				}
 				message.reply(fetchAllOk(result))
 				logDebug("Sent ${result.size()} templates to client")
